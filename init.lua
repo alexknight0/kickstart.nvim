@@ -300,6 +300,7 @@ end,                                              { desc = '[T]est [M]ethod' })
 -- stylua: ignore end
 
 --[[ Debugging Keymaps ]]
+-- For information on dap functions see `:help dap.txt`
 -- stylua: ignore start
 vim.keymap.set('n', '<leader>bb', "<cmd>lua require'dap'.toggle_breakpoint()<cr>", { desc = '[B]reakpoint: Toggle [B]reakpoint' })
 vim.keymap.set(
@@ -447,6 +448,11 @@ require('lazy').setup({
     {
         'chrisgrieser/nvim-spider',
         lazy = true,
+        keys = {
+            { 'w', "<cmd>lua require('spider').motion('w')<CR>", mode = { 'n', 'o', 'x' } },
+            { 'e', "<cmd>lua require('spider').motion('e')<CR>", mode = { 'n', 'o', 'x' } },
+            { 'b', "<cmd>lua require('spider').motion('b')<CR>", mode = { 'n', 'o', 'x' } },
+        },
     },
     {
         -- If not working, check dependencies are all installed.
@@ -667,7 +673,6 @@ require('lazy').setup({
             vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
             vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
             vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
-            vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
             vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
             vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
             --[[ To reset oldfiles:
@@ -678,6 +683,13 @@ require('lazy').setup({
             -- test
             vim.keymap.set('n', '<leader>/', require('telescope').extensions.smart_open.smart_open, { desc = '[S]earch Recent Files' })
             vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
+
+            -- Grep inside directory
+            vim.keymap.set('n', '<leader>sg', '<cmd>Telescope dir live_grep<CR>', { noremap = true, silent = true, desc = '[S]earch by [G]rep' })
+
+            -- Unused but could be useful:
+            -- vim.keymap.set("n", "<leader>pd", "<cmd>Telescope dir find_files<CR>", { noremap = true, silent = true })
+            -- vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
 
             local function right_aligned_oldfiles()
                 -- Display a single element per line - the filepath.
@@ -915,7 +927,7 @@ require('lazy').setup({
                     map('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction', { 'n', 'x' })
 
                     -- Similar to a code action. For an example, see hls-eval-plugin.
-                    map('<leader>clr', vim.lsp.codelens.run, '[C]ode [L]ens [R]un', { 'n', 'x' })
+                    map('<leader>cr', vim.lsp.codelens.run, '[C]ode lens [R]un', { 'n', 'x' })
                     map('<leader>clu', vim.lsp.codelens.refresh, '[C]ode [L]ens [U]pdate', { 'n', 'x' })
 
                     -- See documentation
@@ -973,6 +985,27 @@ require('lazy').setup({
                         map('<leader>th', function()
                             vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
                         end, '[T]oggle Inlay [H]ints')
+                    end
+
+                    if client and client.server_capabilities.codeLensProvider then
+                        -- Initial refresh when LSP attaches
+                        vim.lsp.codelens.refresh()
+
+                        -- Refresh after saving
+                        vim.api.nvim_create_autocmd('BufWritePost', {
+                            buffer = event.buf,
+                            callback = function()
+                                vim.lsp.codelens.refresh()
+                            end,
+                        })
+
+                        -- Refresh after leaving insert mode
+                        vim.api.nvim_create_autocmd('InsertLeave', {
+                            buffer = event.buf,
+                            callback = function()
+                                vim.lsp.codelens.refresh()
+                            end,
+                        })
                     end
                 end,
             })
@@ -1065,6 +1098,10 @@ require('lazy').setup({
                                         autoExtendOn = false,
                                     },
                                 },
+                                -- Note in hls 2.7.0.0 there is a bug that if the commented code follows
+                                -- a multi-line function definition it won't be detected. A way to fix
+                                -- this would be to put a single line function definition above the commented
+                                -- code, i.e. 'foo = undefined'.
                                 eval = {
                                     globalOn = true,
                                     codeLens = true,
