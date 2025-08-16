@@ -103,6 +103,28 @@ return {
 
         dap.listeners.after.event_initialized['dapui_config'] = function()
             require('dapui').open()
+            dap.set_exception_breakpoints { 'caught', 'uncaught' }
+        end
+
+        dap.listeners.before.event_stopped['filter_non_project_exceptions'] = function(session, body)
+            if body.reason == 'exception' then
+                session:request('stackTrace', { threadId = body.threadId }, function(err, resp)
+                    if not err and resp and resp.stackFrames then
+                        for _, frame in ipairs(resp.stackFrames) do
+                            local source = frame.source and frame.source.path or ''
+                            -- 1    == start searching from the start
+                            -- true == match literally (don't pattern match)
+                            if source:find(vim.fn.getcwd(), 1, true) then
+                                -- We are in our own packages code, so return now (avoiding a later call to 'continue')
+                                return
+                            end
+                        end
+
+                        -- If none of the frames are yours, resume
+                        session:request('continue', { threadId = body.threadId })
+                    end
+                end)
+            end
         end
 
         dap.listeners.before.event_terminated['dapui_config'] = function()

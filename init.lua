@@ -272,6 +272,18 @@ vim.keymap.set('n', '<leader>zz', function()
     end
 end)
 
+-- Toggle virtual edit.
+vim.keymap.set('n', '<leader>ve', function()
+    local current = vim.inspect(vim.opt.virtualedit:get())
+    if current == '{ "block" }' then
+        vim.opt.virtualedit = 'all'
+        vim.notify "virtualedit = 'all'"
+    else
+        vim.opt.virtualedit = 'block'
+        vim.notify "virtualedit = 'block'"
+    end
+end, { desc = 'Toggle [V]irtual [E]dit' })
+
 --[[ Java specific keymaps (these can be done in the ftplugin directory instead if you prefer) ]]
 -- stylua: ignore start
 vim.keymap.set('n', '<leader>go', function()
@@ -294,7 +306,9 @@ end,                                              { desc = '[T]est [C]lass' })
 
 vim.keymap.set('n', '<leader>tm', function()
     if vim.bo.filetype == 'java' then
-        require('jdtls').test_nearest_method()
+        require('jdtls').test_nearest_method({    config_overrides = {
+        skipFiles = { "**/*" } -- **/*.class", "**/org/eclipse/**" }
+    }})
     end
 end,                                              { desc = '[T]est [M]ethod' })
 -- stylua: ignore end
@@ -313,9 +327,13 @@ vim.keymap.set(
 vim.keymap.set('n', '<leader>br', "<cmd>lua require'dap'.clear_breakpoints()<cr>", { desc = '[B]reakpoint: [C]lear all' })
 vim.keymap.set('n', '<leader>ba', '<cmd>Telescope dap list_breakpoints<cr>',       { desc = '[B]reakpoint: List [A]ll' })
 vim.keymap.set('n', '<leader>dc', "<cmd>lua require'dap'.continue()<cr>",          { desc = '[D]ebug: [C]ontinue' })
+vim.keymap.set('n', '<F5>',       "<cmd>lua require'dap'.continue()<cr>",          { desc = 'Debug: Continue' })
 vim.keymap.set('n', '<leader>dj', "<cmd>lua require'dap'.step_over()<cr>",         { desc = '[D]ebug: (go down a line [J])' })
+vim.keymap.set('n', '<F6>',       "<cmd>lua require'dap'.step_over()<cr>",         { desc = 'Debug: (go down a line)' })
 vim.keymap.set('n', '<leader>dk', "<cmd>lua require'dap'.step_into()<cr>",         { desc = '[D]ebug: (go up into a function [K])' })
+vim.keymap.set('n', '<F7>',       "<cmd>lua require'dap'.step_into()<cr>",         { desc = 'Debug: (go up into a function)' })
 vim.keymap.set('n', '<leader>do', "<cmd>lua require'dap'.step_out()<cr>",          { desc = '[D]ebug: Step [O]ut' })
+vim.keymap.set('n', '<F8>',       "<cmd>lua require'dap'.step_out()<cr>",          { desc = 'Debug: Step Out' })
 vim.keymap.set('n', '<leader>dd', function()
     require('dap').disconnect()
     require('dapui').close()
@@ -338,6 +356,10 @@ vim.keymap.set('n', '<leader>dh', '<cmd>Telescope dap commands<cr>',            
 vim.keymap.set('n', '<leader>de', function()
     require('telescope.builtin').diagnostics { default_text = ':E:' }
 end,                                                                               { desc = '[D]ebug: [E]rrors' })
+
+vim.keymap.set('n', '<leader>dx', function()
+    require('dap').set_exception_breakpoints({ "uncaught", "caught" })
+end,                                                                               { desc = '[D]ebug: Enable Stopping On E[x]ceptions' })
 
 -- stylua: ignore end
 
@@ -445,15 +467,15 @@ require('lazy').setup({
         'NMAC427/guess-indent.nvim',
         opts = {},
     },
-    {
-        'chrisgrieser/nvim-spider',
-        lazy = true,
-        keys = {
-            { 'w', "<cmd>lua require('spider').motion('w')<CR>", mode = { 'n', 'o', 'x' } },
-            { 'e', "<cmd>lua require('spider').motion('e')<CR>", mode = { 'n', 'o', 'x' } },
-            { 'b', "<cmd>lua require('spider').motion('b')<CR>", mode = { 'n', 'o', 'x' } },
-        },
-    },
+    -- {
+    --     'chrisgrieser/nvim-spider',
+    --     lazy = true,
+    --     keys = {
+    --         { 'w', "<cmd>lua require('spider').motion('w')<CR>", mode = { 'n', 'o', 'x' } },
+    --         { 'e', "<cmd>lua require('spider').motion('e')<CR>", mode = { 'n', 'o', 'x' } },
+    --         { 'b', "<cmd>lua require('spider').motion('b')<CR>", mode = { 'n', 'o', 'x' } },
+    --     },
+    -- },
     {
         -- If not working, check dependencies are all installed.
         'danielfalk/smart-open.nvim',
@@ -679,7 +701,7 @@ require('lazy').setup({
               :let v:oldfiles = []
               :wshada!
             ]]
-            --vim.keymap.set('n', '<leader>/', builtin.oldfiles, { desc = '[S]earch Recent Files' })
+            vim.keymap.set('n', '<leader>.', builtin.oldfiles, { desc = '[S]earch Recent Files' })
             -- test
             vim.keymap.set('n', '<leader>/', require('telescope').extensions.smart_open.smart_open, { desc = '[S]earch Recent Files' })
             vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
@@ -891,7 +913,7 @@ require('lazy').setup({
                     -- Jump to the definition of the word under your cursor.
                     --  This is where a variable was first declared, or where a function is defined, etc.
                     --  To jump back, press <C-t>.
-                    map('grd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
+                    map('gd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
 
                     -- WARN: This is not Goto Definition, this is Goto Declaration.
                     --  For example, in C this would take you to the header.
@@ -1239,6 +1261,12 @@ require('lazy').setup({
                     -- },
                 },
                 opts = {},
+                config = function()
+                    -- Load custom lua snippets
+                    require('luasnip.loaders.from_lua').lazy_load {
+                        paths = { './snippets' },
+                    }
+                end,
             },
             'folke/lazydev.nvim',
         },
