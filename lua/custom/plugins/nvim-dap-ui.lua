@@ -103,9 +103,10 @@ return {
 
         dap.listeners.after.event_initialized['dapui_config'] = function()
             require('dapui').open()
-            dap.set_exception_breakpoints { 'caught', 'uncaught' }
         end
 
+        -- Automatically skip over exceptions that don't originate from our project.
+        -- Disable catching exceptions after one is found that doesn't originate from our project.
         dap.listeners.before.event_stopped['filter_non_project_exceptions'] = function(session, body)
             if body.reason == 'exception' then
                 session:request('stackTrace', { threadId = body.threadId }, function(err, resp)
@@ -119,6 +120,11 @@ return {
                                 return
                             end
                         end
+
+                        -- We disable exception breakpoints upon catching an exception that doesn't originate from our
+                        -- project as we expect to receive even more exceptions that don't originate from our project at this point.
+                        vim.notify('Disabling exception breakpoints (see nvim-dap-ui.lua config for info)', vim.log.levels.INFO)
+                        dap.set_exception_breakpoints {}
 
                         -- If none of the frames are yours, resume
                         session:request('continue', { threadId = body.threadId })

@@ -340,7 +340,14 @@ vim.keymap.set('n', '<leader>dd', function()
 end,                                                                               { desc = '[D]ebug: [D]isconnect' })
 vim.keymap.set('n', '<leader>dt', function()
     require('dap').terminate()
+
+    -- Close the ui - but if we close it straight up, and the main window we had originally is gone, then it will
+    -- leave one of the 'dapui' windows open. To prevent this, we create a empty window, close the ui,
+    -- and then try close the empty window. We can't close the empty window if it is the last window open, so
+    -- we are either left with the original window or the empty window.
+    vim.cmd("new")
     require('dapui').close()
+    pcall(function() vim.cmd("close") end) -- 'pcall' discards the error thrown by close on an empty window.
 end,                                                                               { desc = '[D]ebug: [T]erminate' })
 vim.keymap.set('n', '<leader>dr', "<cmd>lua require'dap'.repl.toggle()<cr>",       { desc = '[D]ebug: [R]epl' })
 vim.keymap.set('n', '<leader>dl', "<cmd>lua require'dap'.run_last()<cr>",          { desc = '[D]ebug: Run [L]ast' })
