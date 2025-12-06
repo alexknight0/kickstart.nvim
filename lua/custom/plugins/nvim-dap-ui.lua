@@ -29,7 +29,12 @@ return {
                 terminate = '',
             },
         },
-        element_mappings = {},
+        element_mappings = {
+            -- stacks = {
+            --     open = '<CR>',
+            --     expand = 'o',
+            -- },
+        },
         expand_lines = true,
         floating = {
             border = 'single',

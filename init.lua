@@ -168,13 +168,20 @@ vim.o.splitbelow = true
 --   See `:help lua-options`
 --   and `:help lua-options-guide`
 vim.o.list = true
-vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
+vim.opt.listchars = {
+    tab = '» ',
+    -- trail = '·',
+    nbsp = '␣',
+}
 
 -- Preview substitutions live, as you type!
 vim.o.inccommand = 'split'
 
 -- Show which line your cursor is on
 vim.o.cursorline = true
+
+-- Coloured column indicating line length limit.
+-- vim.o.colorcolumn = '100'
 
 -- Minimal number of screen lines to keep above and below the cursor.
 vim.opt.scrolloff = 4
@@ -306,11 +313,15 @@ end,                                              { desc = '[T]est [C]lass' })
 
 vim.keymap.set('n', '<leader>tm', function()
     if vim.bo.filetype == 'java' then
-        require('jdtls').test_nearest_method({    config_overrides = {
-        skipFiles = { "**/*" } -- **/*.class", "**/org/eclipse/**" }
-    }})
+        require('jdtls').test_nearest_method()
     end
 end,                                              { desc = '[T]est [M]ethod' })
+
+vim.keymap.set('n', '<leader>ta', function()
+    if vim.bo.filetype == 'java' then
+        require('jdtls').pick_main_class()
+    end
+end,                                              { desc = 'Run main' })
 -- stylua: ignore end
 
 --[[ Debugging Keymaps ]]
@@ -368,7 +379,14 @@ vim.keymap.set('n', '<leader>dx', function()
     require('dap').set_exception_breakpoints({ "uncaught", "caught" })
 end,                                                                               { desc = '[D]ebug: Enable Stopping On E[x]ceptions' })
 
+-- Navigate up and down the stack frame (for some reason navigating via highlighting and pressing 'o' doesn't seem to work)
+vim.keymap.set('n', '<F9>', "<cmd>lua require'dap'.down()<cr>", { desc = 'Debug: Go down stack frame' })
+vim.keymap.set('n', '<F10>', "<cmd>lua require'dap'.up()<cr>",   { desc = 'Debug: Go up stack frame' })
+
 -- stylua: ignore end
+
+-- This command sums numbers across all rows; (the first 'thing' that is on each row is interpreted as a number. If it is not a number, it will be 0!
+-- :%!awk '{print; total+=$1}END{print total}'
 
 -- Open current file in windows explorer
 vim.api.nvim_create_user_command('Wex', function()
@@ -496,6 +514,11 @@ require('lazy').setup({
             { 'nvim-telescope/telescope-fzf-native.nvim', build = 'make' },
             -- Optional.  If installed, native fzy will be used when match_algorithm is fzy
             { 'nvim-telescope/telescope-fzy-native.nvim' },
+        },
+        opts = {
+            -- When fuzzy finding, the name of parent directories
+            -- come before the name of the file.
+            filename_first = false,
         },
     },
 
@@ -682,6 +705,12 @@ require('lazy').setup({
                     },
                     -- See  :help telescope  and  /path_display  to see options.
                     path_display = { 'smart' },
+
+                    -- Save the 10 most recent telescope searches so they can be resumed with '[leader]sr'
+                    cache_picker = {
+                        num_pickers = 10,
+                        ignore_empty_prompt = true, -- don't cache picker if we didn't enter anything.
+                    },
                 },
                 -- pickers = {}
                 extensions = {
@@ -703,7 +732,7 @@ require('lazy').setup({
             vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
             vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
             vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
-            vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
+            vim.keymap.set('n', '<leader>sr', builtin.pickers, { desc = '[S]earch [R]esume' })
             --[[ To reset oldfiles:
               :let v:oldfiles = []
               :wshada!
