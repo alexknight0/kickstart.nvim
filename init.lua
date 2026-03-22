@@ -124,18 +124,6 @@ vim.schedule(function()
     vim.o.clipboard = 'unnamedplus'
 end)
 
-vim.g.clipboard = {
-    name = 'win32yank',
-    copy = {
-        ['+'] = 'win32yank.exe -i --crlf',
-        ['*'] = 'win32yank.exe -i --crlf',
-    },
-    paste = {
-        ['+'] = 'win32yank.exe -o --lf',
-        ['*'] = 'win32yank.exe -o --lf',
-    },
-}
-
 -- Enable break indent
 vim.o.breakindent = true
 
@@ -222,6 +210,9 @@ vim.keymap.set('n', 'j', "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = tr
 vim.keymap.set('i', 'jk', '<esc>')
 vim.keymap.set('i', 'kj', '<esc>')
 
+-- Exit terminal mode with a single <Esc> (default requires <C-\><C-n>)
+vim.keymap.set('t', '<Esc>', '<C-\\><C-n>')
+
 vim.keymap.set('n', '<C-S>', ':update<cr>', { desc = 'Alternate method of saving file' })
 vim.keymap.set('i', '<C-S>', '<esc>:update<cr>gi', { desc = 'Alternate method of saving file' })
 
@@ -241,13 +232,7 @@ vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
--- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
--- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
--- is not what someone will guess without a bit more experience.
---
--- NOTE: This won't work in all terminal emulators/tmux/etc. Try your own mapping
--- or just use <C-\><C-n> to exit terminal mode
-vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
+-- (terminal <Esc> mapping is defined above with the other escape keymaps)
 
 -- Subsitute word under cursor
 vim.keymap.set('n', '<leader>rw', [[:%s/<C-r><C-w>/<C-r><C-w>/g<Left><Left>]], { desc = '[R]ename [w]ord under cursor' })
@@ -403,14 +388,34 @@ vim.api.nvim_create_user_command('Wex', function()
     vim.fn.system('explorer.exe /select, ' .. escapedPath)
 end, { desc = 'Open current directory in [W]indows [ex]plorer.' })
 
--- Copy current file's directory to clipboard
-vim.api.nvim_create_user_command('Cwd', function()
-    -- Get current directory: https://vimdoc.sourceforge.net/htmldoc/cmdline.html#filename-modifiers
-    local directoryPath = "'" .. vim.fn.expand '%:p:h' .. "'"
+-- [[ Device specific features ]]
+if vim.uv.os_gethostname() == 'Alexs-MacBook-Air.local' then
+    --[[ Features for our mac laptop only ]]
+else
+    --[[ Features for Windows only ]]
 
-    -- Copy to clipboard
-    vim.fn.system('echo ' .. directoryPath .. ' | win32yank.exe -i --crlf')
-end, { desc = '[C]opy the current [w]orking [d]irectory (file directory) to clipboard' })
+    -- Copy current file's directory to clipboard
+    vim.api.nvim_create_user_command('Cwd', function()
+        -- Get current directory: https://vimdoc.sourceforge.net/htmldoc/cmdline.html#filename-modifiers
+        local directoryPath = "'" .. vim.fn.expand '%:p:h' .. "'"
+
+        -- Copy to clipboard
+        vim.fn.system('echo ' .. directoryPath .. ' | win32yank.exe -i --crlf')
+    end, { desc = '[C]opy the current [w]orking [d]irectory (file directory) to clipboard' })
+
+    -- Windows clipboard management
+    vim.g.clipboard = {
+        name = 'win32yank',
+        copy = {
+            ['+'] = 'win32yank.exe -i --crlf',
+            ['*'] = 'win32yank.exe -i --crlf',
+        },
+        paste = {
+            ['+'] = 'win32yank.exe -o --lf',
+            ['*'] = 'win32yank.exe -o --lf',
+        },
+    }
+end
 
 -- Output number of warnings
 vim.api.nvim_create_user_command('Warnings', function()
