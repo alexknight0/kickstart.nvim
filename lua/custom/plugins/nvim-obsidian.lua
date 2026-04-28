@@ -1,34 +1,23 @@
+local vault_path = vim.loop.os_uname().sysname == 'Darwin' and vim.fn.expand '~/Library/Mobile Documents/iCloud~md~obsidian/Documents/main'
+    or '/mnt/c/Users/Alex/Documents/ObsidianVaults/Obsidian Vault'
+
+if vim.fn.isdirectory(vault_path) == 0 then
+    vim.notify('obsidian.nvim: vault not found at ' .. vault_path, vim.log.levels.INFO)
+    return {}
+end
+
 return {
-  'epwalsh/obsidian.nvim',
-  version = '*', -- recommended, use latest release instead of latest commit
-  lazy = true,
-  ft = 'markdown',
-  -- Replace the above line with this if you only want to load obsidian.nvim for markdown files in your vault:
-  -- event = {
-  --   -- If you want to use the home shortcut '~' here you need to call 'vim.fn.expand'.
-  --   -- E.g. "BufReadPre " .. vim.fn.expand "~" .. "/my-vault/*.md"
-  --   -- refer to `:h file-pattern` for more examples
-  --   "BufReadPre path/to/my-vault/*.md",
-  --   "BufNewFile path/to/my-vault/*.md",
-  -- },
-  dependencies = {
-    -- Required.
-    'nvim-lua/plenary.nvim',
-
-    -- see below for full list of optional dependencies 👇
-  },
-  opts = {
-    workspaces = {
-      {
-        name = 'ObsidianVault',
-        path = '/mnt/c/Users/Alex/Documents/ObsidianVaults/Obsidian Vault',
-      },
+    'epwalsh/obsidian.nvim',
+    version = '*',
+    lazy = true,
+    ft = 'markdown',
+    dependencies = {
+        'nvim-lua/plenary.nvim',
     },
-
-    ui = {
-      enable = false,
+    opts = {
+        workspaces = {
+            { name = 'ObsidianVault', path = vault_path },
+        },
+        ui = { enable = false },
     },
-
-    -- see below for full list of options 👇
-  },
 }

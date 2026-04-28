@@ -1,0 +1,8 @@
+return {
+    'xb-bx/editable-term.nvim',
+    config = function()
+        require('editable-term').setup({
+            wait_for_keys_delay = 150,
+        })
+    end,
+}

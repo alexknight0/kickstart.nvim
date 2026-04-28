@@ -213,6 +213,14 @@ vim.keymap.set('i', 'kj', '<esc>')
 -- Exit terminal mode with a single <Esc> (default requires <C-\><C-n>)
 vim.keymap.set('t', '<Esc>', '<C-\\><C-n>')
 
+-- Retain a keybind to send escape to the terminal.
+vim.keymap.set('t', '<C-[>', function()
+    local chan = vim.b.terminal_job_id
+    if chan then
+        vim.fn.chansend(chan, '\x1b') -- raw ESC
+    end
+end, { desc = 'Send ESC to terminal' })
+
 vim.keymap.set('n', '<C-S>', ':update<cr>', { desc = 'Alternate method of saving file' })
 vim.keymap.set('i', '<C-S>', '<esc>:update<cr>gi', { desc = 'Alternate method of saving file' })
 
@@ -1222,6 +1230,30 @@ require('lazy').setup({
                     end,
                 },
             }
+
+            -- COMMENTED OUT - No longer used basedpyright, but this may be a good sample of how to execute this pattern.
+            -- Disable pyright if basedpyright is available (prefer basedpyright)
+            --
+            -- vim.api.nvim_create_autocmd('LspAttach', {
+            --     callback = function(args)
+            --         local client = vim.lsp.get_client_by_id(args.data.client_id)
+            --         if client and client.name == 'pyright' then
+            --             -- Check if basedpyright is attached to this buffer
+            --             local basedpyright_attached = false
+            --             for _, c in ipairs(vim.lsp.get_clients({ bufnr = args.buf })) do
+            --                 if c.name == 'basedpyright' then
+            --                     basedpyright_attached = true
+            --                     break
+            --                 end
+            --             end
+            --
+            --             if basedpyright_attached then
+            --                 vim.lsp.stop_client(client.id)
+            --                 print('[LSP] Stopped pyright (basedpyright is active)')
+            --             end
+            --         end
+            --     end,
+            -- })
         end,
     },
 
