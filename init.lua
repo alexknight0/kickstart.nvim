@@ -221,6 +221,31 @@ vim.keymap.set('t', '<C-[>', function()
     end
 end, { desc = 'Send ESC to terminal' })
 
+-- Fix paste truncation in terminal buffers: send pasted text directly via
+-- chansend instead of going through Neovim's default paste handler.
+local default_paste = vim.paste
+vim.paste = (function()
+    local in_term_paste = false
+    return function(lines, phase)
+        if vim.bo.buftype == 'terminal' and vim.fn.mode() == 't' then
+            if phase == 1 or phase == -1 then
+                in_term_paste = true
+            end
+            if in_term_paste then
+                local chan = vim.b.terminal_job_id
+                if chan then
+                    vim.fn.chansend(chan, table.concat(lines, '\n'))
+                end
+                if phase == 3 or phase == -1 then
+                    in_term_paste = false
+                end
+                return true
+            end
+        end
+        return default_paste(lines, phase)
+    end
+end)()
+
 vim.keymap.set('n', '<C-S>', ':update<cr>', { desc = 'Alternate method of saving file' })
 vim.keymap.set('i', '<C-S>', '<esc>:update<cr>gi', { desc = 'Alternate method of saving file' })
 
@@ -751,16 +776,22 @@ require('lazy').setup({
               :wshada!
             ]]
             vim.keymap.set('n', '<leader>.', builtin.oldfiles, { desc = '[S]earch Recent Files' })
-            -- test
             vim.keymap.set('n', '<leader>/', require('telescope').extensions.smart_open.smart_open, { desc = '[S]earch Recent Files' })
             vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
 
-            -- Grep inside directory
-            vim.keymap.set('n', '<leader>sg', '<cmd>Telescope dir live_grep<CR>', { noremap = true, silent = true, desc = '[S]earch by [G]rep' })
+            -- Grep inside current working directory
+            vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
+
+            -- Grep directory, and then grep inside that director
+            vim.keymap.set(
+                'n',
+                '<leader>sig',
+                '<cmd>Telescope dir live_grep<CR>',
+                { noremap = true, silent = true, desc = '[S]earch by [I]nner directory [G]rep' }
+            )
 
             -- Unused but could be useful:
             -- vim.keymap.set("n", "<leader>pd", "<cmd>Telescope dir find_files<CR>", { noremap = true, silent = true })
-            -- vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
 
             local function right_aligned_oldfiles()
                 -- Display a single element per line - the filepath.
